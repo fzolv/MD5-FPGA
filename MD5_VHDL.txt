@@ -1,0 +1,223 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+--use IEEE.numeric_std.all
+--use work.func.all;
+--use work.mnfn.all;
+ -- Uncomment the following library declaration if using
+-- arithmetic functions with Signed or Unsigned values
+use IEEE.NUMERIC_STD.ALL;
+use std.env.all;
+
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx primitives in this code.
+--library UNISIM;
+--use UNISIM.VComponents.all;
+
+entity Hash is
+    Port ( v    : in        STD_LOGIC_VECTOR (7 downto 0);
+           x    : in        STD_LOGIC_VECTOR (7 downto 0);
+           y    : in        STD_LOGIC_VECTOR (7 downto 0);
+			  
+			  f    : inout     STD_LOGIC_VECTOR (31 downto 0); 
+			  g    : inout     STD_LOGIC_VECTOR (31 downto 0);
+			  h    : inout     STD_LOGIC_VECTOR (31 downto 0);
+			 
+			  p1   : inout     STD_LOGIC_VECTOR (64 downto 0);
+			  p2   : inout     STD_LOGIC_VECTOR (446 downto 0);
+			  p3   : inout     STD_LOGIC_VECTOR (511 downto 0);
+			  
+			  final: out       STD_LOGIC_VECTOR (127 downto 0);
+			  clk  : in        STD_LOGIC;	
+		          clk1 : in        STD_LOGIC	
+			 	 );
+				
+end Hash;
+
+
+
+ architecture hash_arc of Hash is
+
+
+               signal i                : integer range 0 to 63 := 0;
+                signal j                : integer:= 0;
+					
+
+type ab is array (0 to 15) of std_logic_vector(31 downto 0);
+					signal  str : ab;
+					signal A:STD_LOGIC_VECTOR(31 downto 0) :="00000001001000110100010101100111";
+					signal B:STD_LOGIC_VECTOR(31 downto 0) :="10001001101010111100110111101111";
+				        signal C:STD_LOGIC_VECTOR(31 downto 0) :="11111110110111001011101010011000";
+					signal D:STD_LOGIC_VECTOR(31 downto 0) :="01110110010101000011001000010000";
+					
+					signal AA:STD_LOGIC_VECTOR(31 downto 0) :=A;
+					signal BB:STD_LOGIC_VECTOR(31 downto 0) :=B;
+					signal CC:STD_LOGIC_VECTOR(31 downto 0) :=C;
+					signal DD:STD_LOGIC_VECTOR(31 downto 0) :=D;
+                                        
+                                        signal A1:STD_LOGIC_VECTOR(31 downto 0) :=A;
+					signal B1:STD_LOGIC_VECTOR(31 downto 0) :=B;
+					signal C1:STD_LOGIC_VECTOR(31 downto 0) :=C;
+					signal D1:STD_LOGIC_VECTOR(31 downto 0) :=D;
+			
+      type S_array is array(0 to 63) of integer;
+constant Shf      :S_array:=(7,12,17,22,
+			     7,12,17,22,
+7,12,17,22,
+7,12,17,22,
+5,9,14,20,
+5,9,14,20,
+5,9,14,20,
+5,9,14,20,
+4,11,16,23,
+4,11,16,23,
+4,11,16,23,
+4,11,16,23,
+6,10,15,21,
+6,10,15,21,
+6,10,15,21,
+6,10,15,21);
+			
+
+
+
+type X_array is array(0 to 66) of integer;
+constant Ind      :X_array:=(0,1,2,3,
+4,5,6,7,
+8,9,10,11,
+12,13,14,15,
+17,22,27,16,
+21,26,31,20,
+25,30,19,24,
+29,18,23,28,
+37,40,43,46,
+33,36,39,42,
+45,32,35,38,
+41,44,47,34,
+48,55,62,53,
+60,51,58,49,
+56,63,54,61,
+52,59,50,57,   others=>66);
+
+	type k_array is array(0 to 66) of std_logic_vector(31 downto 0);
+constant K        : k_array := (x"d76aa478", x"e8c7b756", x"242070db", x"c1bdceee",
+                                x"f57c0faf", x"4787c62a", x"a8304613", x"fd469501",
+                                x"698098d8", x"8b44f7af", x"ffff5bb1", x"895cd7be",
+                                x"6b901122", x"fd987193", x"a679438e", x"49b40821", 
+                                x"f61e2562", x"c040b340", x"265e5a51", x"e9b6c7aa",
+                                x"d62f105d", x"02441453", x"d8a1e681", x"e7d3fbc8",
+                                x"21e1cde6", x"c33707d6", x"f4d50d87", x"455a14ed",
+                                x"a9e3e905", x"fcefa3f8", x"676f02d9", x"8d2a4c8a",
+                                x"fffa3942", x"8771f681", x"6d9d6122", x"fde5380c",
+                                x"a4beea44", x"4bdecfa9", x"f6bb4b60", x"bebfbc70",
+                                x"289b7ec6", x"eaa127fa", x"d4ef3085", x"04881d05",
+                                x"d9d4d039", x"e6db99e5", x"1fa27cf8", x"c4ac5665",
+                                x"f4292244", x"432aff97", x"ab9423a7", x"fc93a039",
+                                x"655b59c3", x"8f0ccc92", x"ffeff47d", x"85845dd1",
+                                x"6fa87e4f", x"fe2ce6e0", x"a3014314", x"4e0811a1",
+                                x"f7537e82", x"bd3af235", x"2ad7d2bb", x"eb86d391",		others => x"00000000");
+		
+					
+					
+					
+begin
+  
+
+hash : process (clk1) is        
+    begin     
+    	  --p1<=a&b&c&d&e&f&g&h&'1';
+		     p1<=v&v&v&v&v&v&v&v&'1';
+		  
+		 p2(446 downto 382)<=p1;
+		
+		for i in 0 to 381 loop
+		     p2(i)<='0';
+		end loop;
+		 
+		 p3(511 downto 65)<=p2;
+     
+	   for i in 64 downto 7 loop
+		    p3(i)<='0';
+	   end loop;
+		  
+		  p3(6 downto 0)<='1'&'0'&'0'&'0'&'0'&'0'&'0';
+	 
+	
+      for i in 0 to 15 loop
+			   str(i)<=p3(511-32*i downto 512-32*(i+1));
+	   end loop;
+			
+	   end process;
+
+process is
+begin
+		
+               
+		
+		if(i<=15 and i>=0) then
+		f<=(B and C) or ((not B) and D);
+		
+	        elsif(i<=31 and i>=16) then
+                f<=((B and D)or(C and (not D)));
+		 
+		 
+		elsif(i<=47 and i>=32) then
+	        f<=(B xor C xor D); 
+		 
+		 
+		elsif(i<=63 and i>=48) then
+		f<=(C xor(B and (not D))); 
+		 
+		 end if;
+               
+		 
+                 wait until clk'event;
+		
+		 g<=std_logic_vector(unsigned(B) + unsigned(A)+unsigned(f)+ unsigned(k(j))+unsigned(str(i mod 16)) ); 
+                 
+                 wait until clk'event;
+
+                 h<=B;
+                 
+                 j<=Ind(i+1);    
+                 wait until clk'event;
+
+		 B <= to_stdlogicvector( to_bitvector(g) rol Shf(i));
+                 
+                 wait until clk'event;
+
+		 
+                 A<=D;
+
+                 wait until clk'event;
+
+		 D<=C;
+
+                 wait until clk'event;
+
+		 C<=h;
+	
+                 wait until clk'event;
+		 
+		 i<=i+1;
+
+		if(i=62) then
+ 		A1<=A;
+  		B1<=B;
+  		C1<=C;
+                D1<=D;
+				
+	               wait until clk'event;
+			  AA<=std_logic_vector(unsigned(A1)+unsigned(AA));
+		          BB<=std_logic_vector(unsigned(B1)+unsigned(BB));		 
+                          CC<=std_logic_vector(unsigned(C1)+unsigned(CC)); 
+		          DD<=std_logic_vector(unsigned(D1)+unsigned(DD));
+				       
+							
+			   wait until clk'event;
+				
+			  final<= AA & BB & CC & DD;
+end if;
+end process;		  
+
+
+	end hash_arc;
