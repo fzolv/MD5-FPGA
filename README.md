@@ -1,4 +1,4 @@
-# Code-Stack
+# MD5-FPGA
 MD5 Hash Function Implementation in VHDL
 Tested on Spartan 6 board
  
